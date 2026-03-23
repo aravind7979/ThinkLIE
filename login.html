@@ -214,7 +214,7 @@ async function login(event) {
     const password = document.getElementById("password").value;
 
     try {
-        const res = await fetch("/auth/login", {
+        const res = await fetch("http://ec2-16-171-37-1.eu-north-1.compute.amazonaws.com:8000/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password })
