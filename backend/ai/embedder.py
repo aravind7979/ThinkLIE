@@ -6,7 +6,7 @@ class Embedder:
     def __init__(self):
         self.api_key = os.getenv("GEMINI_API_KEY")
         self.client = genai.Client(api_key=self.api_key) if self.api_key else None
-        self.model = "models/embedding-001"
+        self.model = "models/embedding-004"
 
     def embed_text(self, text: str) -> List[float]:
         if not self.client or not text:
