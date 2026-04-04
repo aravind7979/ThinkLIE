@@ -812,6 +812,24 @@ style="flex:1; border:none; outline:none; font-size:16px; font-family:inherit; r
 .settings-tab { background: none; border: none; text-align: left; padding: 8px; border-radius: 6px; cursor: pointer; color: #374151; font-size: 14px; }
 .settings-tab:hover { background: #f3f4f6; }
 .settings-tab.active { background: #ececec; font-weight: 600; }
+
+body.dark-theme { background-color: #1e1e1e !important; color: #f5f5f5 !important; }
+body.dark-theme .sidebar { background-color: #111 !important; color: white !important; }
+body.dark-theme .chat-item { color: #f5f5f5; }
+body.dark-theme .chat-item:hover { background: #333; }
+body.dark-theme .chat-item.active { background: #2a2a2a; color: white; }
+body.dark-theme .chat-header { background: #1e1e1e !important; border-bottom: 1px solid #333; color: white; }
+body.dark-theme .chat-header button { color: white; }
+body.dark-theme .welcome-title { color: white !important; }
+body.dark-theme .input-area { background: #1e1e1e !important; border-top: 1px solid #333; }
+body.dark-theme .input-container { background: #2a2a2a !important; border: 1px solid #444; }
+body.dark-theme textarea { background: #2a2a2a !important; color: white !important; }
+body.dark-theme .message.assistant { background: #1a1a1a !important; border-color: #333 !important; color: #e5e7eb; }
+body.dark-theme .message.user .message-content p { background: #374151 !important; color: white; }
+body.dark-theme .image-modal { background: #2a2a2a !important; color: white !important; }
+body.dark-theme .settings-tab { color: #e5e7eb; }
+body.dark-theme .settings-tab.active { background: #444; }
+body.dark-theme .settings-tab:hover { background: #374151; }
 </style>
 
 <!-- Text Selection Floating Toolbar -->
@@ -828,17 +846,57 @@ style="flex:1; border:none; outline:none; font-size:16px; font-family:inherit; r
 
 const API_URL = "http://ec2-16-171-37-1.eu-north-1.compute.amazonaws.com:8000/api";
 
+let userSettings = JSON.parse(localStorage.getItem('userSettings')) || {
+    displayName: "", theme: "System", aiPrefs: "", profilePhoto: ""
+};
+
+function applySettings() {
+    if(userSettings.displayName) {
+        const unEl = document.getElementById('userName');
+        if(unEl) unEl.textContent = userSettings.displayName;
+    }
+    if(userSettings.theme === 'Dark') {
+        document.body.classList.add('dark-theme');
+    } else {
+        document.body.classList.remove('dark-theme');
+    }
+    if(userSettings.profilePhoto) {
+        const uA = document.getElementById('userAvatar');
+        if(uA) uA.innerHTML = `<img src="${userSettings.profilePhoto}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+    }
+}
+
 function switchSettingsTab(tab, event) {
     document.querySelectorAll('.settings-tab').forEach(b => b.classList.remove('active'));
     if(event) event.target.classList.add('active');
     const area = document.getElementById('settingsContentArea');
-    if (tab === 'profile') area.innerHTML = `<div id="tab-profile"><h3>Profile</h3><p style="color:#6b7280; font-size:13px; margin: 8px 0;">Manage your public display details.</p><input type="text" id="settingsNameInput" placeholder="Display Name" style="width:100%; padding:8px; margin-top:8px; border:1px solid #d1d5db; border-radius:6px;"><button style="margin-top:16px; background:#10a37f; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;" onclick="saveSettings()">Save</button></div>`;
-    if (tab === 'theme') area.innerHTML = `<div><h3>Theme</h3><p style="font-size:13px; color:#6b7280; margin-top:8px;">Select light or dark mode.</p><select style="margin-top:8px; padding:8px; width:100%; border-radius:6px;"><option>System</option><option>Light</option><option>Dark</option></select></div>`;
+    if (tab === 'profile') area.innerHTML = `<div id="tab-profile"><h3>Profile</h3><p style="color:#6b7280; font-size:13px; margin: 8px 0;">Manage your public display details.</p><label style="font-size:12px;">Profile Photo</label><input type="file" id="settingsPhotoInput" accept="image/*" style="display:block; margin:4px 0 12px;"><input type="text" id="settingsNameInput" placeholder="Display Name" style="width:100%; padding:8px; margin-top:8px; border:1px solid #d1d5db; border-radius:6px;" value="${userSettings.displayName||''}"><button style="margin-top:16px; background:#10a37f; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;" onclick="saveSettings()">Save</button></div>`;
+    if (tab === 'theme') area.innerHTML = `<div><h3>Theme</h3><p style="font-size:13px; color:#6b7280; margin-top:8px;">Select light or dark mode.</p><select id="settingsThemeInput" style="margin-top:8px; padding:8px; width:100%; border-radius:6px;"><option ${userSettings.theme==='System'?'selected':''}>System</option><option ${userSettings.theme==='Light'?'selected':''}>Light</option><option ${userSettings.theme==='Dark'?'selected':''}>Dark</option></select><button style="margin-top:16px; background:#10a37f; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;" onclick="saveSettings()">Save</button></div>`;
     if (tab === 'ai') area.innerHTML = `<div><h3>AI Prefs</h3><p style="font-size:13px; color:#6b7280; margin-top:8px;">Custom AI System Prompts.</p><textarea style="margin-top:8px; padding:8px; width:100%; border-radius:6px; height: 80px;" placeholder="E.g., You are a strict coder."></textarea></div>`;
     if (tab === 'account') area.innerHTML = `<div><h3>Account</h3><p style="font-size:13px; color:#6b7280; margin-top:8px;">Delete or export data.</p><button style="margin-top:8px; color:#ef4444; background:#fee; border:none; padding:8px; border-radius:6px; cursor:pointer; width:100%;">Delete Account</button></div>`;
 }
 
 function saveSettings() {
+    const nameInput = document.getElementById('settingsNameInput');
+    const themeInput = document.getElementById('settingsThemeInput');
+    const photoInput = document.getElementById('settingsPhotoInput');
+    
+    if(nameInput) userSettings.displayName = nameInput.value;
+    if(themeInput) userSettings.theme = themeInput.value;
+    
+    if(photoInput && photoInput.files && photoInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            userSettings.profilePhoto = evt.target.result;
+            localStorage.setItem('userSettings', JSON.stringify(userSettings));
+            applySettings();
+        };
+        reader.readAsDataURL(photoInput.files[0]);
+    } else {
+        localStorage.setItem('userSettings', JSON.stringify(userSettings));
+        applySettings();
+    }
+
     document.getElementById('settingsModal').classList.remove('open');
     alert("Settings Saved!");
 }
@@ -908,6 +966,7 @@ window.addEventListener("load", async () => {
     document.getElementById("userAvatar").textContent =
         email[0].toUpperCase();
 
+    applySettings();
     await loadChats();
 });
 
