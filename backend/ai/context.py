@@ -9,7 +9,8 @@ class ContextBuilder:
         ranked_data: List[Dict[str, Any]],
         session_history: List[Dict[str, Any]],
         long_term_memory: List[str] = None,
-        user_profile: Dict[str, Any] = None
+        user_profile: Dict[str, Any] = None,
+        file_context: Dict[str, Any] = None
     ) -> str:
         """
         Assembles memory, history, and ranked knowledge.
@@ -17,7 +18,15 @@ class ContextBuilder:
         """
         context_parts = []
         
-        # 1. User Profile
+        # 1. User File Context
+        if file_context:
+            context_parts.append("--- USER FILE CONTEXT ---")
+            context_parts.append(f"File Type: {file_context.get('type')}")
+            # Cap file content to prevent blowing out the context window unnecessarily
+            content = file_context.get('content', '')[:10000]
+            context_parts.append(f"File Content Extracted:\n{content}")
+
+        # 2. User Profile
         if user_profile:
             context_parts.append("--- USER PROFILE ---")
             skills = user_profile.get("skills", "")
@@ -25,7 +34,7 @@ class ContextBuilder:
             if skills: context_parts.append(f"Skills: {skills}")
             if goals: context_parts.append(f"Goals: {goals}")
         
-        # 2. Long Term Memory
+        # 3. Long Term Memory
         if long_term_memory:
             context_parts.append("--- LONG TERM MEMORY ---")
             for idx, mem in enumerate(long_term_memory):

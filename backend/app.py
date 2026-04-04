@@ -4,7 +4,7 @@ load_dotenv()
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Form, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
@@ -213,9 +213,10 @@ def get_messages(chat_id: str, current_user: User = Depends(get_current_user), d
     return [{"id": m.id, "role": m.role, "content": m.content, "created_at": m.created_at} for m in messages]
 
 @app.post("/api/chats/{chat_id}/message")
-def send_message(
+async def send_message(
     chat_id: str,
-    request: ChatRequest,
+    message: str = Form(""),
+    file: UploadFile = File(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -225,21 +226,21 @@ def send_message(
 
     if chat.title == "New Chat":
         try:
-            if client:
-                title_prompt = f"Generate a short, concise title (3 to 5 words max) for a chat that starts with this message. Respond with JUST the title, no quotes or intro: '{request.message}'"
+            if client and message:
+                title_prompt = f"Generate a short, concise title (3 to 5 words max) for a chat that starts with this message. Respond with JUST the title, no quotes or intro: '{message}'"
                 title_response = client.models.generate_content(
                     model="gemini-2.5-flash", 
                     contents=title_prompt
                 )
                 chat.title = title_response.text.strip().replace('"', '')
             else:
-                chat.title = str(request.message)[:30] + ("..." if len(request.message) > 30 else "")
+                chat.title = str(message)[:30] + ("..." if len(message) > 30 else "")
         except Exception:
-            chat.title = str(request.message)[:30] + ("..." if len(request.message) > 30 else "")
+            chat.title = str(message)[:30] + ("..." if len(message) > 30 else "")
         db.commit()
 
     # Save user message
-    user_msg = Message(chat_id=chat_id, user_id=current_user.id, role="user", content=request.message)
+    user_msg = Message(chat_id=chat_id, user_id=current_user.id, role="user", content=message)
     db.add(user_msg)
     db.commit()
 
@@ -254,19 +255,19 @@ def send_message(
             from backend.ai.orchestrator import orchestrator
             import asyncio
             
-            # Using the RAG pipeline orchestrator
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            ai_response = loop.run_until_complete(
-                orchestrator.generate_response(
-                    query=request.message, 
-                    history=history, 
-                    client=client,
-                    user_id=current_user.id,
-                    session_id=chat_id
-                )
+            file_bytes = await file.read() if file else None
+            file_type = file.content_type if file else None
+            
+            # Using the RAG pipeline orchestrator directly async
+            ai_response = await orchestrator.generate_response(
+                query=message, 
+                history=history, 
+                client=client,
+                user_id=current_user.id,
+                session_id=chat_id,
+                file_bytes=file_bytes,
+                file_type=file_type
             )
-            loop.close()
             
         except Exception as e:
             ai_response = f"RAG Pipeline Error: {str(e)}"

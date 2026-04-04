@@ -748,7 +748,7 @@ Think-LIE AI
 </div>
 <div class="input-main" style="align-items: center;">
 
-<input type="file" id="chatAttachmentInput" accept="image/*" style="display:none;">
+<input type="file" id="chatAttachmentInput" accept=".pdf,.txt,.md,.csv,image/*" style="display:none;">
 <button id="attachBtn" title="Add photos & files (Ctrl+U)" style="background:none; border:none; cursor:pointer; color:#6b7280; display:flex; padding:4px;">
 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -963,22 +963,24 @@ async function sendMessage() {
     const input = document.getElementById("messageInput");
     let message = input.value.trim();
 
-    if (!message && !attachedImageBase64) return;
+    if (!message && !attachedFile && !attachedImageBase64) return;
     if (!currentChatId) return alert("Create or select a chat first.");
 
     // Provide a simple generic display text if only an image was submitted
-    const displayMsg = message || "Attached an image.";
+    const displayMsg = message || (attachedFile ? "Attached a file." : "Attached an image.");
     addMessageToUI("user", displayMsg);
     
     input.value = "";
     
     // Build payload
-    const payload = { message: message };
-    if (attachedImageBase64) {
-        payload.image = attachedImageBase64;
+    const payload = new FormData();
+    payload.append("message", message);
+    if (attachedFile) {
+        payload.append("file", attachedFile);
     }
 
     // Reset attachments
+    attachedFile = null;
     attachedImageBase64 = null;
     const preview = document.getElementById("attachmentPreview");
     if (preview) preview.style.display = "none";
@@ -997,10 +999,9 @@ async function sendMessage() {
         const res = await fetch(`${API_URL}/chats/${currentChatId}/message`, {
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
                 "Authorization": `Bearer ${token}`
             },
-            body: JSON.stringify(payload)
+            body: payload
         });
 
         const loader = document.getElementById(loadingId);
@@ -1149,13 +1150,14 @@ function autoResize(textarea) {
         textarea.scrollHeight + "px";
 }
 
+let attachedFile = null;
 let attachedImageBase64 = null;
 
 function updateSendButton() {
     const input = document.getElementById("messageInput");
     const button = document.getElementById("sendButton");
 
-    if (input.value.trim().length > 0 || attachedImageBase64) {
+    if (input.value.trim().length > 0 || attachedImageBase64 || attachedFile) {
         button.disabled = false;
         button.classList.add("active");
     } else {
@@ -1209,19 +1211,29 @@ document.addEventListener("DOMContentLoaded", () => {
         chatAttachmentInput.addEventListener("change", (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                attachedImageBase64 = evt.target.result;
-                attachmentImg.src = attachedImageBase64;
-                attachmentPreview.style.display = "block";
+            attachedFile = file;
+            if (file.type.startsWith("image/")) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    attachedImageBase64 = evt.target.result;
+                    attachmentImg.src = attachedImageBase64;
+                    attachmentImg.style.display = "inline-block";
+                    attachmentPreview.style.display = "block";
+                    updateSendButton();
+                };
+                reader.readAsDataURL(file);
+            } else {
+                attachedImageBase64 = null;
+                attachmentImg.style.display = "none"; 
+                attachmentPreview.style.display = "block"; // just showing remove button for docs
                 updateSendButton();
-            };
-            reader.readAsDataURL(file);
+            }
         });
     }
 
     if (removeAttachmentBtn) {
         removeAttachmentBtn.addEventListener("click", () => {
+            attachedFile = null;
             attachedImageBase64 = null;
             chatAttachmentInput.value = "";
             attachmentPreview.style.display = "none";
