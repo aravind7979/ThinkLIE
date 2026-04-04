@@ -1,39 +1,71 @@
+import json
+import re
 from typing import Dict, Any
 
-class IntentDetector:
+class QueryAnalyzer:
     def __init__(self):
-        # We don't have a complex intent model yet, so we will use few-shot prompting
-        # or a simple rule-based approach for this demo.
-        # But we'll try to use the GEMINI API for intent classification as requested by best practices.
-        # However, to minimize LLM roundtrips and latency, we can use a local lightweight mechanism
-        # or a single fast LLM call. Let's implement a simple keyword-based intent detector first,
-        # with a fallback to the LLM if needed, to keep it fast.
-        
-        # Valid intents primarily from dataset: 
-        # learning, informational, transactional.
-        
         self.intent_keywords = {
-            "learning": ["how does", "explain", "why is", "what is the difference", "tutorial", "step by step"],
-            "transactional": ["write an email", "how do I write", "help me write", "rewrite", "generate"],
-            "informational": ["what is", "list", "who", "when", "where", "difference between"]
+            "conceptual": ["how does", "explain", "why is", "what is the difference", "concept"],
+            "coding": ["write code", "how to build", "python", "javascript", "react", "fastapi"],
+            "system_design": ["architecture", "scale", "system design", "load balancer"],
+            "debugging": ["error", "bug", "traceback", "fix", "doesn't work", "issue"],
+            "factual": ["what is", "list", "who", "when", "where"]
         }
 
-    async def detect_intent(self, query: str) -> str:
+    async def analyze(self, query: str, client: Any = None) -> Dict[str, Any]:
         """
-        Detects the user's intent from the query.
-        Returns one of: 'learning', 'informational', 'transactional', or 'general'
+        Classifies intent, rewrites query for retrieval, detects required depth.
+        Fallback to rules if no client is provided/available.
         """
+        if client:
+            return self._analyze_llm(query, client)
+        else:
+            return self._analyze_rules(query)
+
+    def _analyze_rules(self, query: str) -> Dict[str, Any]:
         query_lower = query.lower()
         
-        # Simple heuristic
-        if any(kw in query_lower for kw in self.intent_keywords["transactional"]):
-            return "transactional"
-        elif any(kw in query_lower for kw in self.intent_keywords["learning"]):
-            return "learning"
-        elif any(kw in query_lower for kw in self.intent_keywords["informational"]):
-            return "informational"
+        # Intent
+        detected_intent = "conceptual"
+        for intent, kws in self.intent_keywords.items():
+            if any(kw in query_lower for kw in kws):
+                detected_intent = intent
+                break
+                
+        # Depth
+        depth = "intermediate"
+        if any(w in query_lower for w in ["expert", "advanced", "deep dive"]):
+            depth = "advanced"
+        elif any(w in query_lower for w in ["basic", "simple", "beginner", "for dummies"]):
+            depth = "basic"
             
-        return "general"  # Default fallback
-        
-# Singleton instance
-intent_detector = IntentDetector()
+        return {
+            "intent": detected_intent,
+            "depth": depth,
+            "rewritten_query": query # Without LLM, returning original
+        }
+
+    def _analyze_llm(self, query: str, client: Any) -> Dict[str, Any]:
+        try:
+            prompt = f"""
+            Analyze the following user query. Return ONLY a valid JSON object.
+            Query: "{query}"
+            
+            JSON format:
+            {{
+                "intent": "evaluate as one of: conceptual, factual, coding, system_design, debugging",
+                "depth": "evaluate as one of: basic, intermediate, advanced",
+                "rewritten_query": "A search-engine optimized version of the query for semantic retrieval"
+            }}
+            """
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt
+            )
+            raw_text = response.text.strip().replace("```json", "").replace("```", "")
+            return json.loads(raw_text)
+        except Exception as e:
+            print(f"[QueryAnalyzer] LLM parsing error: {e}")
+            return self._analyze_rules(query)
+
+intent_detector = QueryAnalyzer()

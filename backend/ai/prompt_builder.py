@@ -4,22 +4,35 @@ class PromptBuilder:
     def __init__(self):
         pass
 
-    def build_prompt(self, query: str, intent: str, domain: str, context: str) -> str:
+    def build_prompt(self, analyzed_query: Dict[str, Any], domain: str, context: str) -> str:
         """
-        Constructs the final prompt string that is sent to the LLM.
+        Constructs the final prompt string that enforces layered explanation depth.
         """
-        # A simple parameterized prompt template
-        prompt_template = f"""You are an expert AI assistant knowledgeable in many domains.
-Currently, you are helping a user with a query classified as: '{intent}' intent in the '{domain}' domain.
+        intent = analyzed_query.get("intent", "general")
+        depth = analyzed_query.get("depth", "intermediate")
+        rewritten = analyzed_query.get("rewritten_query", "general query")
+
+        prompt_template = f"""You are an advanced, expert AI assistant with layered reasoning capabilities.
+You are helping a user with a query classified as: 
+- Intent: {intent}
+- Depth: {depth}
+- Topic Domain: {domain}
 
 {context}
 
 Based on the context and your expertise, answer the user's query thoughtfully.
-User Query: {query}
+Your explanation MUST follow this layered structure:
+
+Step 1: Simple Intuition (Briefly explain the 'what' and 'why' for a layman)
+Step 2: Core Concept (Define the specific technical idea or problem)
+Step 3: Internal Mechanism (Explain HOW it works internally, the logic or code)
+Step 4: Real-World Analogy or System Interaction (How does this fit into broader systems or real-life examples? Tradeoffs and constraints?)
+
+Focus on system-level thinking, why tradeoffs exist, and how constraints shape the solution.
+DO NOT give shallow, direct answers without explanation unless explicitly asked to do so.
+
+User Query: {rewritten}
 """
         return prompt_template
 
 prompt_builder = PromptBuilder()
-
-# For the orchestrator to call the LLM directly, or orchestrator can get the client from app.py
-# If app.py passes the active LLM client/model down, we don't need a singleton here.

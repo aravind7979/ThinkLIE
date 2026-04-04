@@ -42,6 +42,16 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    profile = relationship("UserProfile", back_populates="user", uselist=False)
+
+class UserProfile(Base):
+    __tablename__ = "user_profiles"
+    id = Column(String, primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, unique=True)
+    skills = Column(Text, default="")
+    goals = Column(Text, default="")
+    preferences = Column(Text, default="")
+    user = relationship("User", back_populates="profile")
 
 class Chat(Base):
     __tablename__ = "chats"
@@ -245,11 +255,16 @@ def send_message(
             import asyncio
             
             # Using the RAG pipeline orchestrator
-            # Since this is a sync route but orchestrator is async, we use asyncio.run
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             ai_response = loop.run_until_complete(
-                orchestrator.generate_response(request.message, history, client)
+                orchestrator.generate_response(
+                    query=request.message, 
+                    history=history, 
+                    client=client,
+                    user_id=current_user.id,
+                    session_id=chat_id
+                )
             )
             loop.close()
             

@@ -1,45 +1,56 @@
 from typing import List, Dict, Any
 
-class ContextInjector:
+class ContextBuilder:
     def __init__(self):
         pass
 
-    def inject_context(self, retrieved_data: List[Dict[str, Any]], history: List[Dict[str, Any]]) -> str:
+    def inject_context(
+        self,
+        ranked_data: List[Dict[str, Any]],
+        session_history: List[Dict[str, Any]],
+        long_term_memory: List[str] = None,
+        user_profile: Dict[str, Any] = None
+    ) -> str:
         """
-        Assembles the retrieved knowledge and the chat history into a coherent context string.
+        Assembles memory, history, and ranked knowledge.
+        Provides a minimal, structured context to the LLM.
         """
         context_parts = []
         
-        # Inject Knowledge
-        if retrieved_data:
-            context_parts.append("--- RETRIEVED KNOWLEDGE ---")
-            for doc in retrieved_data:
-                title = doc.get("title", "Untitled")
-                content = doc.get("content", "")
-                examples = doc.get("code_examples", [])
-                steps = doc.get("step_by_step_explanation", [])
-                
-                context_parts.append(f"Title: {title}\nContent:\n{content}")
-                if examples:
-                    ex_str = "\n".join(examples)
-                    context_parts.append(f"Examples:\n{ex_str}")
-                if steps:
-                    step_str = "\n".join(steps)
-                    context_parts.append(f"Step-by-step:\n{step_str}")
-                context_parts.append("---------------------------")
+        # 1. User Profile
+        if user_profile:
+            context_parts.append("--- USER PROFILE ---")
+            skills = user_profile.get("skills", "")
+            goals = user_profile.get("goals", "")
+            if skills: context_parts.append(f"Skills: {skills}")
+            if goals: context_parts.append(f"Goals: {goals}")
+        
+        # 2. Long Term Memory
+        if long_term_memory:
+            context_parts.append("--- LONG TERM MEMORY ---")
+            for idx, mem in enumerate(long_term_memory):
+                context_parts.append(f"[{idx+1}] {mem}")
+        
+        # 3. Ranked Knowledge Context
+        if ranked_data:
+            context_parts.append("--- RANKED KNOWLEDGE ---")
+            for idx, doc in enumerate(ranked_data):
+                # Clean/compress the chunk visually
+                content = str(doc.get("content", "")).strip()[:1500]  # Cap per chunk token length
+                source = doc.get("source", "unknown")
+                score = doc.get("score", 0.0)
+                context_parts.append(f"[Source: {source} | Score: {score:.2f}]\n{content}\n")
         else:
             context_parts.append("--- NO SPECIFIC DOMAIN KNOWLEDGE RETRIEVED ---")
 
-        # Inject Chat History (Memory)
-        if history:
-            context_parts.append("--- CHAT HISTORY ---")
-            # Usually keep last N turns
-            for msg in history[-5:]: 
+        # 4. Session Context
+        if session_history:
+            context_parts.append("--- SESSION CONTEXT (Recent History) ---")
+            for msg in session_history[-3:]: # compress: keep only last 3 turns
                 role = msg.get("role", "user")
                 text = msg.get("content", "")
                 context_parts.append(f"{role.capitalize()}: {text}")
-            context_parts.append("--------------------")
             
         return "\n\n".join(context_parts)
 
-context_injector = ContextInjector()
+context_injector = ContextBuilder()
