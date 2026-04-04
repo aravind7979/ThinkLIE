@@ -1,5 +1,6 @@
 import fitz  # PyMuPDF
 from typing import Dict, Any
+from google.genai import types
 
 class FileProcessor:
     def __init__(self):
@@ -24,6 +25,10 @@ class FileProcessor:
         # 3. Plain Text / Markdown / CSV
         elif file_type and (file_type.startswith("text/") or file_type in ["application/json", "application/csv"]):
             return self._process_text(file_bytes)
+            
+        # 4. Audio
+        elif file_type and file_type.startswith("audio/"):
+            return self._process_audio(file_bytes, file_type, query, client)
         
         # Fallback
         return {
@@ -48,7 +53,7 @@ class FileProcessor:
             response = client.models.generate_content(
                 model="gemini-2.5-flash",
                 contents=[
-                    {"mime_type": mime_type, "data": file_bytes},
+                    types.Part.from_bytes(data=file_bytes, mime_type=mime_type),
                     image_prompt
                 ]
             )
@@ -94,5 +99,32 @@ class FileProcessor:
             }
         except Exception as e:
             return {"type": "text", "content": "[Error decoding text file. Ensure it is UTF-8.]", "metadata": {}}
+
+    def _process_audio(self, file_bytes: bytes, mime_type: str, query: str, client: Any) -> Dict[str, Any]:
+        """ Uses Gemini to transcribe and understand the audio dynamically. """
+        if not client:
+            return {"type": "audio", "content": "[Audio provided but no AI client configured to read it.]", "metadata": {}}
+            
+        try:
+            audio_prompt = (
+                f"Analyze this audio explicitly. The user might be speaking to you or asking a question via a voice note. The query provided along with it is: '{query}'. "
+                "Provide a precise transcription or extract the intent and generate a response that specifically addresses it."
+            )
+            
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=[
+                    types.Part.from_bytes(data=file_bytes, mime_type=mime_type),
+                    audio_prompt
+                ]
+            )
+            return {
+                "type": "audio",
+                "content": response.text,
+                "metadata": {"source": "gemini_audio", "mime": mime_type}
+            }
+        except Exception as e:
+            print(f"[FileProcessor] Audio processing error: {e}")
+            return {"type": "audio", "content": f"[Error processing audio: {e}]", "metadata": {}}
 
 file_processor = FileProcessor()
