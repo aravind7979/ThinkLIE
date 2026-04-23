@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: thinklie_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: thinklie
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:alpine
+    container_name: thinklie_redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: thinklie_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DATABASE_URL=postgresql://postgres:password123@db:5432/thinklie
+      - REDIS_URL=redis://redis:6379
+      # Important: Keep your Gemini API key in the AWS .env file, Docker will pick it up automatically if you use --env-file
+    volumes:
+      - chroma_data:/app/data
+
+volumes:
+  postgres_data:
+  chroma_data:
