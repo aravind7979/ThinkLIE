@@ -77,7 +77,7 @@ class Orchestrator:
         
         # 8. LLM Generation
         response = client.models.generate_content(
-            model="gemini-2.5-flash", 
+            model="gemini-2.5-flash-lite", 
             contents=final_prompt
         )
         raw_text = response.text
@@ -96,5 +96,74 @@ class Orchestrator:
             memory_manager.add_long_term_memory(user_id, f"User explored advanced topic: {query}")
 
         return final_text
+
+    async def generate_response_stream(
+        self, 
+        query: str, 
+        history: List[Dict[str, Any]], 
+        client: Any,
+        user_id: str = "anonymous",
+        session_id: str = None,
+        file_bytes: Optional[bytes] = None,
+        file_type: Optional[str] = None
+    ):
+        """
+        Streaming pipeline yielding chunks.
+        """
+        if not session_id:
+            session_id = f"sess_{uuid.uuid4()}"
+
+        # 1. File Processor Module
+        file_context = None
+        if file_bytes:
+            file_context = await file_processor.process(file_bytes, file_type, query, client)
+
+        # 2. Query Analyzer
+        analyzed_query = await intent_detector.analyze(query, client)
+        
+        # 3. Domain Selection
+        domain = await domain_selector.select_domain(analyzed_query.get("rewritten_query", query))
+
+        # 4. Memory & Retrieval
+        session_memory = memory_manager.get_session_memory(session_id)
+        if not session_memory:
+            session_memory = history[-5:]
+            
+        lt_memory = memory_manager.retrieve_long_term_memory(user_id, query)
+        retrieved_docs = await retriever.retrieve_context(domain, analyzed_query.get("rewritten_query", query))
+        ranked_docs = ranker.rank_and_filter(query, retrieved_docs, top_k=5)
+
+        # 5. Context Builder
+        context_str = context_injector.inject_context(
+            ranked_data=ranked_docs,
+            session_history=session_memory,
+            long_term_memory=lt_memory,
+            user_profile={"skills": "General Developer", "goals": "Learn system design"},
+            file_context=file_context
+        )
+
+        # 6. Prompt Engineering
+        final_prompt = prompt_builder.build_prompt(analyzed_query, domain, context_str, has_file=bool(file_context))
+        
+        # 7. LLM Streaming
+        response_stream = client.models.generate_content_stream(
+            model="gemini-2.5-flash-lite", 
+            contents=final_prompt
+        )
+        
+        full_response = ""
+        for chunk in response_stream:
+            text_chunk = chunk.text
+            if text_chunk:
+                full_response += text_chunk
+                yield text_chunk
+
+        # 8. Update Memory Post-Stream
+        session_memory.append({"role": "user", "content": query})
+        session_memory.append({"role": "assistant", "content": full_response})
+        memory_manager.set_session_memory(session_id, session_memory)
+        
+        if analyzed_query.get("depth") == "advanced":
+            memory_manager.add_long_term_memory(user_id, f"User explored advanced topic: {query}")
 
 orchestrator = Orchestrator()

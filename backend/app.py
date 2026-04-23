@@ -4,7 +4,7 @@ load_dotenv()
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 
-from fastapi import FastAPI, Depends, HTTPException, status, Form, UploadFile, File
+from fastapi import FastAPI, Depends, HTTPException, status, Form, UploadFile, File, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
@@ -82,6 +82,14 @@ class Message(Base):
     role = Column(String, nullable=False) # 'user' or 'assistant'
     content = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class MessageIndex(Base):
+    __tablename__ = "message_index"
+    id = Column(String, primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
+    token = Column(String, index=True, nullable=False)
+    chat_id = Column(String, ForeignKey("chats.id"), nullable=False)
+    message_id = Column(String, ForeignKey("messages.id"), nullable=False)
+    positions = Column(String, nullable=False) # JSON encoded list of integers
 
 Base.metadata.create_all(bind=engine)
 
@@ -202,9 +210,65 @@ def login_form(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = D
 def get_me(current_user: User = Depends(get_current_user)):
     return {"id": current_user.id, "email": current_user.email}
 
+import re
+import json
+
+def index_message(db: Session, message_id: str, chat_id: str, content: str):
+    if not content: return
+    # Find all words (alphanumeric sequences)
+    words = re.findall(r'\b\w+\b', content.lower())
+    idx = {}
+    for pos, word in enumerate(words):
+        if word not in idx:
+            idx[word] = []
+        idx[word].append(pos)
+    
+    for word, positions in idx.items():
+        mi = MessageIndex(token=word, chat_id=chat_id, message_id=message_id, positions=json.dumps(positions))
+        db.add(mi)
+    db.commit()
+
 # =================================================
 # CHAT ENDPOINTS
 # =================================================
+from sqlalchemy import func
+
+@app.get("/api/search")
+def search_chats(q: str = Query(""), current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not q.strip():
+        return {"results": []}
+    
+    words = re.findall(r'\b\w+\b', q.lower())
+    if not words:
+        return {"results": []}
+    
+    # Simple ranking: chats that have the most occurrences of any search token
+    # Get user's chats
+    user_chat_ids = [c.id for c in db.query(Chat.id).filter(Chat.user_id == current_user.id).all()]
+    if not user_chat_ids:
+        return {"results": []}
+
+    # Query index for matching tokens
+    matches = db.query(
+        MessageIndex.chat_id,
+        func.count(MessageIndex.id).label('hit_count')
+    ).filter(
+        MessageIndex.chat_id.in_(user_chat_ids),
+        MessageIndex.token.in_(words)
+    ).group_by(MessageIndex.chat_id).order_by(func.count(MessageIndex.id).desc()).limit(10).all()
+    
+    results = []
+    for chat_id, hit_count in matches:
+        chat = db.query(Chat).filter(Chat.id == chat_id).first()
+        if chat:
+            results.append({
+                "chat_id": chat.id,
+                "title": chat.title,
+                "hits": hit_count
+            })
+            
+    return {"results": results}
+
 @app.post("/api/chats")
 def create_chat(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     new_chat = Chat(user_id=current_user.id, title="New Chat")
@@ -243,7 +307,7 @@ async def send_message(
             if client and message:
                 title_prompt = f"Generate a short, concise title (3 to 5 words max) for a chat that starts with this message. Respond with JUST the title, no quotes or intro: '{message}'"
                 title_response = client.models.generate_content(
-                    model="gemini-2.5-flash", 
+                    model="gemini-2.5-flash-lite", 
                     contents=title_prompt
                 )
                 chat.title = title_response.text.strip().replace('"', '')
@@ -257,41 +321,79 @@ async def send_message(
     user_msg = Message(chat_id=chat_id, user_id=current_user.id, role="user", content=message)
     db.add(user_msg)
     db.commit()
+    db.refresh(user_msg)
+    index_message(db, user_msg.id, chat_id, message)
 
     # Fetch history for context
     history_records = db.query(Message).filter(Message.chat_id == chat_id).order_by(Message.created_at.asc()).all()
     history = [{"role": m.role, "content": m.content} for m in history_records]
 
-    if not client:
-        ai_response = "Gemini API not configured. Check your .env file."
-    else:
+    async def event_stream():
+        import json
+        yield f"data: {json.dumps({'type': 'title', 'title': chat.title})}\n\n"
+        
+        full_ai_response = ""
+        if not client:
+            full_ai_response = "Gemini API not configured. Check your .env file."
+            yield f"data: {json.dumps({'type': 'chunk', 'text': full_ai_response})}\n\n"
+        else:
+            try:
+                from ai.orchestrator import orchestrator
+                file_bytes = await file.read() if file else None
+                file_type = file.content_type if file else None
+                
+                async for text_chunk in orchestrator.generate_response_stream(
+                    query=message, 
+                    history=history, 
+                    client=client,
+                    user_id=current_user.id,
+                    session_id=chat_id,
+                    file_bytes=file_bytes,
+                    file_type=file_type
+                ):
+                    full_ai_response += text_chunk
+                    yield f"data: {json.dumps({'type': 'chunk', 'text': text_chunk})}\n\n"
+            except Exception as e:
+                err = f"RAG Pipeline Error: {str(e)}"
+                full_ai_response += err
+                yield f"data: {json.dumps({'type': 'chunk', 'text': err})}\n\n"
+        
+        # Save assistant message to DB after stream completes
         try:
-            from ai.orchestrator import orchestrator
-            import asyncio
-            
-            file_bytes = await file.read() if file else None
-            file_type = file.content_type if file else None
-            
-            # Using the RAG pipeline orchestrator directly async
-            ai_response = await orchestrator.generate_response(
-                query=message, 
-                history=history, 
-                client=client,
-                user_id=current_user.id,
-                session_id=chat_id,
-                file_bytes=file_bytes,
-                file_type=file_type
-            )
-            
+            # Need a new session because generator runs outside the request context
+            from app import SessionLocal, Message
+            with SessionLocal() as stream_db:
+                ai_msg = Message(chat_id=chat_id, user_id=current_user.id, role="assistant", content=full_ai_response)
+                stream_db.add(ai_msg)
+                stream_db.commit()
+                stream_db.refresh(ai_msg)
+                index_message(stream_db, ai_msg.id, chat_id, full_ai_response)
         except Exception as e:
-            ai_response = f"RAG Pipeline Error: {str(e)}"
+            print(f"Error saving AI message: {e}")
 
-    # Save assistant message
-    ai_msg = Message(chat_id=chat_id, user_id=current_user.id, role="assistant", content=ai_response)
-    db.add(ai_msg)
-    db.commit()
+    from fastapi.responses import StreamingResponse
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
-    return {"reply": ai_response, "chat_title": chat.title}
+# =================================================
+# LIVE VOICE WEBSOCKET
+# =================================================
+from fastapi import WebSocket, WebSocketDisconnect, Query
+from ai.live_voice import stream_live_voice
+
+@app.websocket("/api/live-voice")
+async def websocket_live_voice(websocket: WebSocket, token: str = Query(None), db: Session = Depends(get_db)):
+    if not token:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+        
+    try:
+        user = get_current_user(token=token, db=db)
+    except HTTPException:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    # Pass connection to the Live Voice handler
+    await stream_live_voice(websocket, user.id)
 
 # =================================================
 # API ENDPOINTS ONLY - FRONTEND IS DECOUPLED

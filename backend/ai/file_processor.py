@@ -51,7 +51,7 @@ class FileProcessor:
             )
             
             response = client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-2.5-flash-lite",
                 contents=[
                     types.Part.from_bytes(data=file_bytes, mime_type=mime_type),
                     image_prompt
@@ -112,7 +112,7 @@ class FileProcessor:
             )
             
             response = client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-2.5-flash-lite",
                 contents=[
                     types.Part.from_bytes(data=file_bytes, mime_type=mime_type),
                     audio_prompt

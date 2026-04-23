@@ -13,3 +13,5 @@ chromadb
 redis
 pymupdf
 psycopg2-binary
+
+websockets
