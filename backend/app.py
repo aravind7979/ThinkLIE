@@ -29,10 +29,24 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 # =================================================
+# Persistent Directories Setup
+# =================================================
+os.makedirs("data", exist_ok=True)
+os.makedirs("uploads", exist_ok=True)
+
+# =================================================
 # DATABASE
 # =================================================
-SQLALCHEMY_DATABASE_URL = "sqlite:///./think_alie.db"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./think_alie.db")
+
+if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+else:
+    # Handle older 'postgres://' schema prefix if needed
+    if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
+        SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    engine = create_engine(SQLALCHEMY_DATABASE_URL)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -125,7 +139,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origin_regex="https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -252,7 +266,7 @@ async def send_message(
         ai_response = "Gemini API not configured. Check your .env file."
     else:
         try:
-            from backend.ai.orchestrator import orchestrator
+            from ai.orchestrator import orchestrator
             import asyncio
             
             file_bytes = await file.read() if file else None
@@ -280,34 +294,5 @@ async def send_message(
     return {"reply": ai_response, "chat_title": chat.title}
 
 # =================================================
-# SERVE STATIC FILES (FRONTEND)
+# API ENDPOINTS ONLY - FRONTEND IS DECOUPLED
 # =================================================
-
-from pathlib import Path
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-@app.get("/")
-def serve_index():
-    return FileResponse(os.path.join(BASE_DIR, "index.html"))
-
-@app.get("/login.html")
-def serve_login_html():
-    return FileResponse(os.path.join(BASE_DIR, "login.html"))
-
-@app.get("/index.html")
-def serve_index_html():
-    return FileResponse(os.path.join(BASE_DIR, "index.html"))
-
-@app.get("/home.html")
-def serve_home():
-    return FileResponse(os.path.join(BASE_DIR, "home.html"))
-
-@app.get("/myLogo.png")
-def serve_logo():
-    logo_path = os.path.join(BASE_DIR, "myLogo.png")
-    if os.path.exists(logo_path):
-        return FileResponse(logo_path)
-    return FileResponse(os.path.join(BASE_DIR, "index.html")) # fallback
-
-app.mount("/static", StaticFiles(directory=BASE_DIR), name="static")

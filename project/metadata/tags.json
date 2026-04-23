@@ -1,0 +1,17 @@
+{
+  "topics": [
+    "AI",
+    "machine-learning",
+    "databases",
+    "python",
+    "general",
+    "product",
+    "internal"
+  ],
+  "importance_levels": {
+    "critical": 3,
+    "important": 2,
+    "normal": 1,
+    "archive": 0
+  }
+}

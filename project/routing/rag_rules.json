@@ -1,0 +1,23 @@
+{
+  "use_rag_if_patterns": [
+    "what is .*(in our|in the|according to|based on)",
+    "explain .*(concept|term|definition|topic)",
+    "how does .*(work|function|operate)",
+    "tell me about",
+    "summarize",
+    "describe",
+    "what are the .*(steps|rules|guidelines|requirements)",
+    "find|search|look up",
+    "latest|recent|current",
+    "internal|our|company|project",
+    "document|report|paper|article"
+  ],
+  "skip_rag_if_patterns": [
+    "^(what is )?\\d+[\\\\+\\\\-\\\\*\\\\/]\\d+",
+    "calculate|compute|solve|math",
+    "translate .* to",
+    "write a (poem|story|joke|haiku)",
+    "what (time|day|date) is it",
+    "hello|hi|hey|thanks|thank you"
+  ]
+}

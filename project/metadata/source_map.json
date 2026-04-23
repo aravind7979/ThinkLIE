@@ -1,0 +1,9 @@
+{
+  "_comment": "Maps source filenames to their origin and importance",
+  "example_doc.txt": {
+    "origin": "internal",
+    "url": null,
+    "importance": "normal",
+    "added_by": "admin"
+  }
+}

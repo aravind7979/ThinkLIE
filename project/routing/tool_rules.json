@@ -1,0 +1,13 @@
+{
+  "tools": {
+    "calculator": [
+      "calculate", "compute", "\\d+\\s*[\\+\\-\\*\\/]\\s*\\d+", "percent of", "square root"
+    ],
+    "datetime": [
+      "current time", "today's date", "what day is", "what time"
+    ],
+    "web_search": [
+      "latest news", "current price", "today.*stock", "breaking"
+    ]
+  }
+}

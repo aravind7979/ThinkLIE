@@ -1,0 +1,7 @@
+{
+  "gemini_api_key": "AIzaSyDRi4q78FR1ekk3SkV4eDRiry_Y3D6JDn4",
+  "model_name": "gemini-1.5-pro",
+  "max_tokens": 8192,
+  "temperature": 0.2,
+  "embedding_model": "models/embedding-001"
+}

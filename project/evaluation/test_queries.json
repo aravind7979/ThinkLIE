@@ -1,0 +1,37 @@
+[
+  {
+    "id": "eval_001",
+    "query": "What is RAG in AI systems?",
+    "expected_keywords": ["retrieval", "augmented", "generation", "vector", "context"],
+    "should_use_rag": true,
+    "category": "definition"
+  },
+  {
+    "id": "eval_002",
+    "query": "What is 25 * 4?",
+    "expected_answer": "100",
+    "should_use_rag": false,
+    "category": "math"
+  },
+  {
+    "id": "eval_003",
+    "query": "Explain how embeddings work",
+    "expected_keywords": ["vector", "similarity", "semantic", "representation"],
+    "should_use_rag": true,
+    "category": "explanation"
+  },
+  {
+    "id": "eval_004",
+    "query": "What are the steps to ingest a document?",
+    "expected_keywords": ["chunk", "embed", "index", "store"],
+    "should_use_rag": true,
+    "category": "list"
+  },
+  {
+    "id": "eval_005",
+    "query": "Hello, how are you?",
+    "expected_keywords": ["hello", "help"],
+    "should_use_rag": false,
+    "category": "greeting"
+  }
+]

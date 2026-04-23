@@ -1,0 +1,7 @@
+{
+  "top_k": 7,
+  "similarity_threshold": 0.65,
+  "chunk_size": 1000,
+  "chunk_overlap": 150,
+  "max_context_chars": 32000
+}

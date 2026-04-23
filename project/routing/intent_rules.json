@@ -1,0 +1,28 @@
+{
+  "intents": {
+    "definition": [
+      "what is", "define", "meaning of", "definition"
+    ],
+    "explanation": [
+      "how does", "explain", "walk me through", "describe how"
+    ],
+    "comparison": [
+      "difference between", "compare", "vs", "versus", "better"
+    ],
+    "summary": [
+      "summarize", "tldr", "brief overview", "key points"
+    ],
+    "troubleshoot": [
+      "error", "not working", "issue", "problem", "fix", "debug"
+    ],
+    "list": [
+      "list", "give me", "what are", "enumerate", "examples of"
+    ],
+    "opinion": [
+      "should i", "recommend", "best way", "advice", "suggest"
+    ],
+    "factual": [
+      "who", "when", "where", "which year", "founded"
+    ]
+  }
+}
