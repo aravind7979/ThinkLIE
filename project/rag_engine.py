@@ -28,7 +28,11 @@ with open("configs/model_config.json") as f:
 with open("configs/rag_config.json") as f:
     RAG_CFG = json.load(f)
 
-genai.configure(api_key=MODEL_CFG["gemini_api_key"])
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+genai.configure(api_key=os.getenv("GEMINI_API_KEY", MODEL_CFG.get("gemini_api_key")))
 model = genai.GenerativeModel(
     MODEL_CFG["model_name"],
     system_instruction=(Path("prompts/system_prompt.txt").read_text(encoding="utf-8") if Path("prompts/system_prompt.txt").exists() else None)

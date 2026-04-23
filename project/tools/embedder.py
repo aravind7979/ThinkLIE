@@ -14,8 +14,15 @@ import google.generativeai as genai
 EMBED_CACHE_DIR = Path("cache/embedding_cache")
 EMBED_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 with open("configs/model_config.json") as f:
     MODEL_CFG = json.load(f)
+EMBED_MODEL = MODEL_CFG.get("embedding_model", "models/embedding-001")
+API_KEY = os.getenv("GEMINI_API_KEY", MODEL_CFG.get("gemini_api_key"))
+genai.configure(api_key=API_KEY)
 EMBED_MODEL = MODEL_CFG.get("embedding_model", "models/embedding-001")
 
 

@@ -61,5 +61,8 @@ if __name__ == "__main__":
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
     with open("configs/model_config.json") as f:
         MODEL_CFG = json.load(f)
-    genai.configure(api_key=MODEL_CFG["gemini_api_key"])
+    import os
+    from dotenv import load_dotenv
+    load_dotenv()
+    genai.configure(api_key=os.getenv("GEMINI_API_KEY", MODEL_CFG.get("gemini_api_key", "")))
     build_index()
