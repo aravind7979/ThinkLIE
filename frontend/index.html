@@ -285,7 +285,7 @@
         btn.textContent = "Processing...";
         
         try {
-            const res = await fetch("http://ec2-16-171-37-1.eu-north-1.compute.amazonaws.com:8000/auth/signup", {
+            const res = await fetch("/api-proxy/auth/signup", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password })
