@@ -860,6 +860,18 @@ style="flex:1; border:none; outline:none; font-size:16px; font-family:inherit; r
                 <span style="font-size: 14px;">Toggle sidebar</span>
                 <span style="background: var(--input-bg); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 12px;">Ctrl + Shift + S</span>
             </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                <span style="font-size: 14px;">Focus chat input</span>
+                <span style="background: var(--input-bg); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 12px;">Shift + Esc</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                <span style="font-size: 14px;">Add photos & files</span>
+                <span style="background: var(--input-bg); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 12px;">Ctrl + U</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 14px;">Show shortcuts</span>
+                <span style="background: var(--input-bg); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 12px;">Ctrl + /</span>
+            </div>
         </div>
     </div>
 </div>
@@ -886,21 +898,6 @@ style="flex:1; border:none; outline:none; font-size:16px; font-family:inherit; r
         <button id="searchNavNext" style="background: none; border: none; color: var(--text-color); cursor: pointer; padding: 4px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
     </div>
     <button id="searchNavClose" style="background: none; border: none; color: var(--text-color); cursor: pointer; padding: 4px; margin-left: 4px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-</div>
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-                <span style="font-size: 14px;">Focus chat input</span>
-                <span style="background: var(--input-bg); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 12px;">Shift + Esc</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-                <span style="font-size: 14px;">Add photos & files</span>
-                <span style="background: var(--input-bg); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 12px;">Ctrl + U</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 14px;">Show shortcuts</span>
-                <span style="background: var(--input-bg); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 12px;">Ctrl + /</span>
-            </div>
-        </div>
-    </div>
 </div>
 
 <div id="toastContainer" style="position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#374151; color:white; padding:12px 24px; border-radius:8px; display:none; align-items:center; gap:12px; z-index:2000; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);">
@@ -1145,6 +1142,7 @@ function renderChatList() {
 /* ================= SEARCH HIGHLIGHTING ================= */
 let searchMatches = [];
 let currentMatchIndex = -1;
+let activeSearchQuery = "";
 
 function applySearchHighlight(html, query) {
     if (!query) return html;
@@ -1789,7 +1787,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // =================================================
     // GLOBAL SEARCH (CTRL+K)
     // =================================================
-    let activeSearchQuery = "";
     
     document.addEventListener("keydown", (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key === "k") {
