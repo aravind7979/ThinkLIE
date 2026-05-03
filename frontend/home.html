@@ -825,6 +825,21 @@ ThinkLIE AI
 
 <div class="input-area">
 <div class="input-container">
+<div id="voiceStatusBar" style="display: none; align-items: center; justify-content: space-between; padding: 12px 20px; background: #10a37f; color: white; border-radius: 12px 12px 0 0; box-shadow: 0 4px 12px rgba(16, 163, 127, 0.3);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <div class="pulse-ring"></div>
+        <span id="voiceStatusText" style="font-weight: 500; font-size: 14px;">Listening...</span>
+    </div>
+    <button onclick="stopLiveVoiceFromBar()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold;">Stop</button>
+</div>
+<style>
+.pulse-ring { width: 12px; height: 12px; background: white; border-radius: 50%; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.7); } 70% { box-shadow: 0 0 0 10px rgba(255,255,255,0); } 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); } }
+#voiceStatusBar.open { display: flex !important; }
+#voiceStatusBar.processing { background: #f59e0b; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); }
+#voiceStatusBar.speaking { background: #3b82f6; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+#liveVoiceBtn.live-active { background: rgba(16, 163, 127, 0.1); border-radius: 6px; }
+</style>
 <div class="input-wrapper" style="flex-direction: column; display: flex;">
 <div id="attachmentPreview" style="display:none; padding:12px 16px; border-bottom:1px solid #ececec; position:relative;">
     <div style="position:relative; display:inline-block;">
@@ -866,6 +881,13 @@ style="flex:1; border:none; outline:none; font-size:16px; font-family:inherit; r
 <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
 <line x1="12" y1="19" x2="12" y2="23"></line>
 <line x1="8" y1="23" x2="16" y2="23"></line>
+</svg>
+</button>
+
+<button id="liveVoiceBtn" title="Live Voice Chat" style="background:none; border:none; cursor:pointer; color:#10a37f; display:flex; padding:4px; margin: 0 4px;">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+<path d="M2 12a10 10 0 0 1 20 0v2a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-2a6 6 0 0 0-12 0v2a2 2 0 0 1-2 2H2v-4z"></path>
+<path d="M12 22a2 2 0 0 0 2-2H10a2 2 0 0 0 2 2z"></path>
 </svg>
 </button>
 
@@ -1956,8 +1978,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // =================================================
     // LIVE VOICE CHAT (FULL DUPLEX)
     // =================================================
-    // Direct WebSocket to backend — Vercel cannot proxy ws:// connections
-    const LIVE_VOICE_WS = "wss://ec2-13-49-178-85.eu-north-1.compute.amazonaws.com/api/live-voice";
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host || 'ec2-13-49-178-85.eu-north-1.compute.amazonaws.com:8000';
+    const LIVE_VOICE_WS = `${protocol}//${host}/api/live-voice`;
 
     const liveVoiceBtn  = document.getElementById("liveVoiceBtn");
     const voiceStatusBar  = document.getElementById("voiceStatusBar");

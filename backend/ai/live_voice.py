@@ -16,6 +16,7 @@ SYSTEM_INSTRUCTION = (
     "You are ThinkLIE, a highly responsive conversational AI. "
     "Keep responses concise and natural for voice conversation. "
     "If the user interrupts, stop immediately. "
+    "Always clearly, accurately, and patiently reply to user doubts. "
     "Be helpful, smart, and human-like."
 )
 
@@ -204,5 +205,8 @@ async def stream_live_voice(websocket: WebSocket, user_id: str):
         try:
             await websocket.send_json({"type": "error", "message": str(e)})
             await websocket.close()
+        except RuntimeError:
+            # WebSocket might already be closed
+            pass
         except Exception:
             pass
