@@ -79,7 +79,7 @@
             gap: 8px;
             font-size: 16px;
             font-weight: 600;
-            color: #000;
+            color: var(--text-color);
         }
 
         .logo-img {
@@ -101,8 +101,8 @@
 }
 
         .new-chat-btn {
-            background: white;
-            border: 1px solid #d1d5db;
+            background: var(--input-bg, #fff);
+            border: 1px solid var(--border-color, #d1d5db);
             border-radius: 8px;
             padding: 12px 16px;
             width: 100%;
@@ -111,12 +111,13 @@
             gap: 8px;
             cursor: pointer;
             font-size: 14px;
+            color: var(--text-color);
             margin-bottom: 8px;
             transition: background 0.2s;
         }
 
         .new-chat-btn:hover {
-            background: #f3f4f6;
+            background: var(--border-color, #f3f4f6);
         }
 
         .section-header {
@@ -124,7 +125,7 @@
             cursor: pointer;
             font-size: 14px;
             font-weight: 600;
-            color: #000;
+            color: var(--text-color);
             display: flex;
             align-items: center;
             gap: 8px;
@@ -133,7 +134,7 @@
         }
 
         .section-header:hover {
-            background: #f3f4f6;
+            background: var(--input-bg, #f3f4f6);
             border-radius: 8px;
         }
 
@@ -160,19 +161,19 @@
         .upload-btn {
             width: 100%;
             padding: 8px 12px;
-            background: white;
-            border: 1px dashed #d1d5db;
+            background: var(--input-bg, white);
+            border: 1px dashed var(--border-color, #d1d5db);
             border-radius: 6px;
             cursor: pointer;
             font-size: 12px;
-            color: #6b7280;
+            color: var(--text-color);
             margin-bottom: 8px;
             transition: background 0.2s;
         }
 
         .upload-btn:hover {
-            background: #f9fafb;
-            border-color: #9ca3af;
+            background: var(--border-color, #f9fafb);
+            border-color: var(--text-color);
         }
 
         .image-item {
@@ -299,7 +300,7 @@
 
         .sidebar-footer {
             padding: 8px;
-            border-top: 1px solid #ececec;
+            border-top: 1px solid var(--border-color, #ececec);
         }
 
         .user-profile {
@@ -313,7 +314,7 @@
         }
 
         .user-profile:hover {
-            background: #f3f4f6;
+            background: var(--input-bg, #f3f4f6);
         }
 
         .user-avatar {
@@ -651,6 +652,63 @@
             color: #ef4444 !important;
         }
 
+        /* ── Streaming cursor ────────────────────────────── */
+        @keyframes blink-cursor {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0; }
+        }
+        .message.streaming .message-content::after {
+            content: "▌";
+            display: inline-block;
+            animation: blink-cursor 0.7s step-end infinite;
+            color: #10a37f;
+            margin-left: 1px;
+        }
+
+        /* ── Voice Status Bar ────────────────────────────── */
+        #voiceStatusBar {
+            position: fixed;
+            bottom: 110px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 22px;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 500;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            z-index: 600;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+            backdrop-filter: blur(8px);
+            color: white;
+            transition: background 0.3s;
+            white-space: nowrap;
+        }
+        #voiceStatusBar.open      { display: flex; }
+        #voiceStatusBar.listening  { background: rgba(16,163,127,0.92); }
+        #voiceStatusBar.processing { background: rgba(139,92,246,0.92); }
+        #voiceStatusBar.speaking   { background: rgba(59,130,246,0.92); }
+        .vs-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%; background: white;
+            animation: pulse-dot 1.2s infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50%       { transform: scale(1.5); opacity: 0.6; }
+        }
+        .vs-stop {
+            background: rgba(255,255,255,0.25);
+            border: none; color: white; border-radius: 12px;
+            padding: 3px 10px; cursor: pointer; font-size: 12px; margin-left: 6px;
+        }
+        .vs-stop:hover { background: rgba(255,255,255,0.4); }
+        #liveVoiceBtn.live-active {
+            animation: pulse-red 1.5s infinite ease-in-out;
+            color: #ef4444 !important;
+        }
+
         /* Image modal styles */
         .image-modal-overlay {
             position: fixed;
@@ -793,12 +851,12 @@ style="flex:1; border:none; outline:none; font-size:16px; font-family:inherit; r
 </textarea>
 
 <button id="liveVoiceBtn" title="Live Voice Chat" style="background:none; border:none; cursor:pointer; color:#10a37f; display:flex; padding:4px;">
-<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
-<path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-<line x1="12" y1="19" x2="12" y2="22"></line>
-<line x1="8" y1="22" x2="16" y2="22"></line>
-<circle cx="12" cy="12" r="10" stroke-dasharray="2 4"></circle>
+<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+  <rect x="1"  y="9"  width="3" height="6" rx="1.5"/>
+  <rect x="6"  y="5"  width="3" height="14" rx="1.5"/>
+  <rect x="11" y="2"  width="3" height="20" rx="1.5"/>
+  <rect x="16" y="5"  width="3" height="14" rx="1.5"/>
+  <rect x="21" y="9"  width="3" height="6"  rx="1.5"/>
 </svg>
 </button>
 
@@ -898,6 +956,13 @@ style="flex:1; border:none; outline:none; font-size:16px; font-family:inherit; r
         <button id="searchNavNext" style="background: none; border: none; color: var(--text-color); cursor: pointer; padding: 4px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
     </div>
     <button id="searchNavClose" style="background: none; border: none; color: var(--text-color); cursor: pointer; padding: 4px; margin-left: 4px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+</div>
+
+<!-- Voice Status Bar -->
+<div id="voiceStatusBar" class="listening">
+    <span class="vs-dot"></span>
+    <span id="voiceStatusText">Listening...</span>
+    <button class="vs-stop" onclick="stopLiveVoiceFromBar()">Stop</button>
 </div>
 
 <div id="toastContainer" style="position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#374151; color:white; padding:12px 24px; border-radius:8px; display:none; align-items:center; gap:12px; z-index:2000; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);">
@@ -1301,6 +1366,7 @@ async function sendMessage() {
     // Add empty message container for streaming
     addMessageToUI("assistant", "", false, loadingId);
     const msgDiv = document.getElementById(loadingId);
+    msgDiv.classList.add("streaming"); // show blinking cursor
     const contentDiv = msgDiv.querySelector('.message-content');
     contentDiv.innerHTML = `<span class="typing-indicator"><span></span><span></span><span></span></span>`;
 
@@ -1349,11 +1415,10 @@ async function sendMessage() {
                                     renderHtml = applySearchHighlight(renderHtml, activeSearchQuery);
                                 }
                                 contentDiv.innerHTML = renderHtml;
-                                
-                                // Auto scroll logic: only scroll if user is near bottom
-                                const chatContainer = document.getElementById("chatMessages");
-                                const isScrolledToBottom = chatContainer.scrollHeight - chatContainer.clientHeight <= chatContainer.scrollTop + 50;
-                                if (isScrolledToBottom) {
+
+                                // Smart scroll — only follow if user hasn't scrolled up
+                                if (!userScrolledUp) {
+                                    const chatContainer = document.getElementById("chatMessages");
                                     chatContainer.scrollTop = chatContainer.scrollHeight;
                                 }
                             }
@@ -1370,6 +1435,7 @@ async function sendMessage() {
             finalRenderHtml = applySearchHighlight(finalRenderHtml, activeSearchQuery);
         }
         contentDiv.innerHTML = finalRenderHtml;
+        msgDiv.classList.remove("streaming"); // hide blinking cursor
         
         // Re-init search navigation to pick up newly added marks during stream
         if (activeSearchQuery) {
@@ -1423,6 +1489,15 @@ async function createNewChat() {
 
 
 /* ================= UI ================= */
+
+// Smart-scroll state: if user scrolls up, stop auto-scrolling
+let userScrolledUp = false;
+document.getElementById("chatMessages").addEventListener("scroll", function() {
+    const el = this;
+    const atBottom = el.scrollHeight - el.clientHeight - el.scrollTop < 120;
+    if (atBottom) userScrolledUp = false;
+    else userScrolledUp = true;
+});
 
 marked.setOptions({
   highlight: function(code, lang) {
@@ -1881,118 +1956,192 @@ document.addEventListener("DOMContentLoaded", () => {
     // =================================================
     // LIVE VOICE CHAT (FULL DUPLEX)
     // =================================================
-    const liveVoiceBtn = document.getElementById("liveVoiceBtn");
-    let liveSocket = null;
-    let liveAudioCtx = null;
+    // Direct WebSocket to backend — Vercel cannot proxy ws:// connections
+    const LIVE_VOICE_WS = "wss://ec2-13-49-178-85.eu-north-1.compute.amazonaws.com/api/live-voice";
+
+    const liveVoiceBtn  = document.getElementById("liveVoiceBtn");
+    const voiceStatusBar  = document.getElementById("voiceStatusBar");
+    const voiceStatusText = document.getElementById("voiceStatusText");
+
+    let liveSocket    = null;
+    let liveAudioCtx  = null;
     let liveMicStream = null;
     let liveProcessor = null;
-    let nextPlayTime = 0;
+    let nextPlayTime  = 0;
+    let liveActive    = false;
+    let aiSpeaking    = false;           // true while AI audio is playing
+    let micVolumeSum  = 0, micSamples = 0;
+
+    // ── Status helpers ─────────────────────────────────────────────────────
+    function setVoiceStatus(state, text) {
+        if (!voiceStatusBar) return;
+        voiceStatusBar.className = "open " + state;
+        if (voiceStatusText) voiceStatusText.textContent = text;
+    }
+    function hideVoiceStatus() {
+        if (voiceStatusBar) voiceStatusBar.className = "";
+    }
+
+    // Called from the Stop button inside the status bar
+    window.stopLiveVoiceFromBar = function() { stopLiveVoice(); };
 
     if (liveVoiceBtn) {
-        liveVoiceBtn.addEventListener("click", toggleLiveVoice);
+        liveVoiceBtn.addEventListener("click", () => {
+            if (liveActive) stopLiveVoice();
+            else startLiveVoice();
+        });
     }
 
-    async function toggleLiveVoice() {
-        if (liveSocket && liveSocket.readyState === WebSocket.OPEN) {
-            stopLiveVoice();
-        } else {
-            await startLiveVoice();
-        }
-    }
-
+    // ── Start ──────────────────────────────────────────────────────────────
     async function startLiveVoice() {
+        const token = localStorage.getItem("access_token");
+        if (!token) { alert("Please log in to use Live Voice."); return; }
+
+        liveActive = true;
+        if (liveVoiceBtn) liveVoiceBtn.classList.add("live-active");
+        setVoiceStatus("processing", "Connecting...");
+
         try {
-            liveVoiceBtn.style.color = "#ef4444"; // Red
-            liveVoiceBtn.classList.add("active");
-            
-            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-            const token = localStorage.getItem("token");
-            liveSocket = new WebSocket(`${protocol}//${window.location.host}/api/live-voice?token=${token}`);
+            liveSocket = new WebSocket(`${LIVE_VOICE_WS}?token=${token}`);
             liveSocket.binaryType = "arraybuffer";
 
             liveSocket.onopen = async () => {
-                console.log("[Live Voice] Connected to server.");
+                console.log("[LiveVoice] WebSocket open.");
                 await startMicrophone();
             };
 
-            liveSocket.onmessage = async (event) => {
-                if (typeof event.data === "string") {
-                    const msg = JSON.parse(event.data);
-                    if (msg.type === "audio") {
-                        playAudioBase64(msg.data);
-                    } else if (msg.type === "turnComplete") {
-                        console.log("[Live Voice] Turn Complete");
-                    }
+            liveSocket.onmessage = (event) => {
+                if (typeof event.data !== "string") return;
+                let msg;
+                try { msg = JSON.parse(event.data); } catch { return; }
+
+                if (msg.type === "status") {
+                    const labels = { listening: "Listening...", processing: "Thinking...", speaking: "Speaking..." };
+                    setVoiceStatus(msg.state, labels[msg.state] || msg.state);
+                    aiSpeaking = (msg.state === "speaking");
+                } else if (msg.type === "audio") {
+                    playAudioBase64(msg.data);
+                } else if (msg.type === "transcript") {
+                    // Show AI transcript in chat as a streaming message (optional)
+                    console.log("[LiveVoice] Transcript:", msg.text);
+                } else if (msg.type === "turnComplete") {
+                    aiSpeaking = false;
+                    setVoiceStatus("listening", "Listening...");
+                } else if (msg.type === "error") {
+                    console.error("[LiveVoice] Server error:", msg.message);
+                    setVoiceStatus("processing", "Error: " + msg.message);
+                    setTimeout(stopLiveVoice, 3000);
+                } else if (msg.type === "ping") {
+                    // heartbeat — no action needed
                 }
             };
 
             liveSocket.onclose = () => {
+                console.log("[LiveVoice] WebSocket closed.");
                 stopLiveVoice();
             };
 
+            liveSocket.onerror = (err) => {
+                console.error("[LiveVoice] WebSocket error:", err);
+                setVoiceStatus("processing", "Connection failed. Check SSL on AWS.");
+                setTimeout(stopLiveVoice, 3000);
+            };
+
         } catch (e) {
-            console.error("[Live Voice] Start failed:", e);
+            console.error("[LiveVoice] Start failed:", e);
             stopLiveVoice();
         }
     }
 
+    // ── Microphone capture ─────────────────────────────────────────────────
     async function startMicrophone() {
-        liveAudioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-        nextPlayTime = liveAudioCtx.currentTime;
-        
-        liveMicStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
-        const source = liveAudioCtx.createMediaStreamSource(liveMicStream);
-        
-        liveProcessor = liveAudioCtx.createScriptProcessor(4096, 1, 1);
-        source.connect(liveProcessor);
-        liveProcessor.connect(liveAudioCtx.destination);
-        
-        liveProcessor.onaudioprocess = (e) => {
-            if (!liveSocket || liveSocket.readyState !== WebSocket.OPEN) return;
-            const inputData = e.inputBuffer.getChannelData(0);
-            const pcm16 = new Int16Array(inputData.length);
-            for (let i = 0; i < inputData.length; i++) {
-                let s = Math.max(-1, Math.min(1, inputData[i]));
-                pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-            }
-            liveSocket.send(pcm16.buffer);
-        };
+        try {
+            liveAudioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+            nextPlayTime = liveAudioCtx.currentTime;
+
+            liveMicStream = await navigator.mediaDevices.getUserMedia({
+                audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 }
+            });
+            const source = liveAudioCtx.createMediaStreamSource(liveMicStream);
+
+            liveProcessor = liveAudioCtx.createScriptProcessor(4096, 1, 1);
+            source.connect(liveProcessor);
+            liveProcessor.connect(liveAudioCtx.destination);
+
+            liveProcessor.onaudioprocess = (e) => {
+                if (!liveSocket || liveSocket.readyState !== WebSocket.OPEN) return;
+
+                const inputData = e.inputBuffer.getChannelData(0);
+
+                // Voice activity detection — if user speaks while AI is speaking, send interrupt
+                let sum = 0;
+                for (let i = 0; i < inputData.length; i++) sum += Math.abs(inputData[i]);
+                const rms = sum / inputData.length;
+
+                if (aiSpeaking && rms > 0.02) {
+                    // User is speaking over the AI → interrupt
+                    console.log("[LiveVoice] User interrupt detected.");
+                    aiSpeaking = false;
+                    // Stop audio queue
+                    nextPlayTime = liveAudioCtx.currentTime;
+                    liveSocket.send(JSON.stringify({ type: "interrupt" }));
+                }
+
+                // Send PCM audio chunk
+                const pcm16 = new Int16Array(inputData.length);
+                for (let i = 0; i < inputData.length; i++) {
+                    const s = Math.max(-1, Math.min(1, inputData[i]));
+                    pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                }
+                liveSocket.send(pcm16.buffer);
+            };
+
+            setVoiceStatus("listening", "Listening...");
+        } catch (err) {
+            console.error("[LiveVoice] Mic access failed:", err);
+            alert("Microphone access denied or not supported.");
+            stopLiveVoice();
+        }
     }
 
+    // ── Audio playback (PCM base64 → AudioBuffer) ──────────────────────────
     function playAudioBase64(b64) {
         if (!liveAudioCtx) return;
-        const binaryString = window.atob(b64);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
+        try {
+            const binary = atob(b64);
+            const bytes  = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+            const pcm16   = new Int16Array(bytes.buffer);
+            const float32 = new Float32Array(pcm16.length);
+            for (let i = 0; i < pcm16.length; i++) float32[i] = pcm16[i] / 32768;
+
+            const buffer = liveAudioCtx.createBuffer(1, float32.length, 16000);
+            buffer.copyToChannel(float32, 0);
+
+            const src = liveAudioCtx.createBufferSource();
+            src.buffer = buffer;
+            src.connect(liveAudioCtx.destination);
+
+            const start = Math.max(liveAudioCtx.currentTime, nextPlayTime);
+            src.start(start);
+            nextPlayTime = start + buffer.duration;
+        } catch (e) {
+            console.error("[LiveVoice] Audio playback error:", e);
         }
-        const pcm16 = new Int16Array(bytes.buffer);
-        const float32 = new Float32Array(pcm16.length);
-        for (let i = 0; i < pcm16.length; i++) {
-            float32[i] = pcm16[i] / 32768;
-        }
-        const buffer = liveAudioCtx.createBuffer(1, float32.length, 16000);
-        buffer.copyToChannel(float32, 0);
-        
-        const source = liveAudioCtx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(liveAudioCtx.destination);
-        
-        const startTime = Math.max(liveAudioCtx.currentTime, nextPlayTime);
-        source.start(startTime);
-        nextPlayTime = startTime + buffer.duration;
     }
 
+    // ── Stop ───────────────────────────────────────────────────────────────
     function stopLiveVoice() {
-        if (liveVoiceBtn) {
-            liveVoiceBtn.style.color = "#10a37f";
-            liveVoiceBtn.classList.remove("active");
-        }
-        if (liveProcessor) { liveProcessor.disconnect(); liveProcessor = null; }
-        if (liveMicStream) { liveMicStream.getTracks().forEach(t => t.stop()); liveMicStream = null; }
-        if (liveAudioCtx) { liveAudioCtx.close(); liveAudioCtx = null; }
-        if (liveSocket && liveSocket.readyState === WebSocket.OPEN) { liveSocket.close(); }
-        liveSocket = null;
+        liveActive = false;
+        aiSpeaking = false;
+        if (liveVoiceBtn) liveVoiceBtn.classList.remove("live-active");
+        hideVoiceStatus();
+        if (liveProcessor)  { liveProcessor.disconnect(); liveProcessor = null; }
+        if (liveMicStream)  { liveMicStream.getTracks().forEach(t => t.stop()); liveMicStream = null; }
+        if (liveAudioCtx)   { liveAudioCtx.close(); liveAudioCtx = null; }
+        if (liveSocket && liveSocket.readyState === WebSocket.OPEN) liveSocket.close();
+        liveSocket   = null;
         nextPlayTime = 0;
     }
 });
