@@ -1,98 +1,134 @@
-# Think-aLIE - AI Language Intelligence Engine
+# ThinkLIE - Production AI Conversational Platform
 
-A ChatGPT-like web application with Supabase authentication and database.
+A full-stack AI system with a custom multi-stage Retrieval-Augmented Generation (RAG) pipeline, designed for context-grounded reasoning, real-time interaction, and scalable deployment.
 
-## Features
+---
 
-- 🔐 Supabase Authentication (Signup/Login)
-- 💬 Multiple Chat Sessions per User
-- 🤖 Gemini AI Integration
-- 🎨 Modern ChatGPT-like UI
-- 📱 Responsive Design
+## 🔗 Demo
 
-## Tech Stack
+* **Live App**: https://thinklie.vercel.app
+* **GitHub**: https://github.com/aravind7979/thinklie
 
-- **Backend**: FastAPI (Python)
-- **Frontend**: HTML/CSS/JavaScript
-- **Database**: Supabase (PostgreSQL)
-- **Auth**: Supabase Auth
-- **AI**: Google Gemini API
-- **Deployment**: Railway (Backend), Vercel (Frontend)
+---
 
-## Setup
+## ❓ Problem Statement
 
-### Prerequisites
+Most AI chat applications rely on direct LLM calls, leading to:
 
-- Python 3.11+
-- Supabase account
-- Google Gemini API key
+* Hallucinated responses due to lack of grounding
+* No persistent memory across sessions
+* Poor handling of multimodal and complex queries
 
-### Environment Variables
+ThinkLIE addresses this by implementing a structured AI orchestration system with retrieval, memory, and real-time interaction layers.
 
-Create a `.env` file in the backend directory:
+---
 
-```env
-SUPABASE_URL=your_supabase_url
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-SUPABASE_ANON_KEY=your_anon_key
-GEMINI_API_KEY=your_gemini_api_key
-```
+## 🏗️ System Architecture
 
-### Installation
+User Input
+→ Intent Detection
+→ Query Rewriting
+→ Domain Routing
+→ Dual Retrieval (ChromaDB + JSON)
+→ Re-Ranking (BM25-style)
+→ Context Injection (Session + Long-term Memory + Files)
+→ LLM (Gemini)
+→ Post-Processing
+→ Streaming Output (SSE / Voice)
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Run the backend:
-   ```bash
-   uvicorn backend.app:app --reload
-   ```
+---
 
-### Deployment
+## ⚙️ Key Features
 
-- **Backend**: Deploy to Railway (requirements.txt in root)
-- **Frontend**: Deploy to Vercel
-- Update `home.html` API_URL with your Railway domain
+* Multi-stage RAG pipeline for context-grounded responses
+* Dual-source retrieval with semantic search and re-ranking
+* Full-duplex live voice interaction via WebSocket (PCM streaming)
+* Multimodal processing (images, PDFs, text, audio) with dynamic routing
+* Two-tier memory architecture (Redis session + ChromaDB long-term)
+* Custom token-indexed full-text search (no Elasticsearch)
+* Real-time streaming responses via Server-Sent Events (SSE)
 
-## Database Schema
+---
 
-Create these tables in Supabase:
+## 🧠 Engineering Highlights
 
-### chats
+### AI Orchestration
 
-```sql
-CREATE TABLE chats (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL,
-  title TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
+* Designed a multi-stage RAG pipeline instead of direct LLM calls
+* Implemented query rewriting and domain routing for better retrieval accuracy
 
-### messages
+### Memory Architecture
 
-```sql
-CREATE TABLE messages (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  chat_id UUID REFERENCES chats(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL,
-  role TEXT NOT NULL, -- 'user' or 'assistant'
-  content TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
+* Redis-based session memory with TTL for short-term context
+* ChromaDB-based long-term semantic memory for cross-session retrieval
 
-## API Endpoints
+### Real-Time Systems
 
-- `POST /auth/signup` - User registration
-- `POST /auth/login` - User login
-- `GET /chats` - List user chats
-- `POST /chats` - Create new chat
-- `GET /chats/{chat_id}/messages` - Get chat messages
-- `POST /chats/{chat_id}/message` - Send message
+* Built WebSocket proxy for low-latency voice interaction
+* Implemented SSE streaming for incremental response delivery
 
-## License
+### Search System
 
-MIT
+* Developed custom inverted-index search using SQL aggregation
+* Eliminated need for external search engines
+
+### Error Handling
+
+* API fallback strategies for LLM failures
+* Handling empty or noisy retrieval results
+* Timeout and streaming interruption handling
+
+---
+
+## 🛠️ Tech Stack
+
+* Backend: Python, FastAPI
+* AI/LLM: Gemini API
+* Databases: PostgreSQL, Redis, ChromaDB
+* Infrastructure: Docker, AWS EC2
+* Frontend: JavaScript (Vercel deployment)
+* Protocols: WebSocket, Server-Sent Events (SSE)
+
+---
+
+## 🚀 Setup Instructions
+
+git clone https://github.com/aravind7979/thinklie
+cd thinklie
+
+# Backend setup
+
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+
+# Docker (optional)
+
+docker-compose up --build
+
+---
+
+## ⚖️ Trade-offs & Design Decisions
+
+* External LLM (Gemini) vs Local Models
+  → Chose Gemini for better reasoning performance and lower system complexity
+
+* Custom Search vs Elasticsearch
+  → Built lightweight inverted index for control and reduced dependencies
+
+* RAG Pipeline Complexity vs Latency
+  → Balanced multi-stage processing with near real-time responses
+
+---
+
+## 🔮 Future Work
+
+* Local LLM integration (hybrid inference)
+* Improved retrieval ranking strategies
+* Persistent long-term user memory
+* Distributed system scaling
+
+---
+
+## 📌 Why This Project Matters
+
+ThinkLIE is not just an AI chatbot. It is a modular AI system that integrates retrieval, memory, real-time interaction, and scalable backend infrastructure - reflecting how modern production AI systems are designed.
