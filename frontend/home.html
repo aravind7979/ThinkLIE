@@ -426,6 +426,8 @@
 
         .message.user {
             flex-direction: row-reverse;
+            align-self: flex-end;
+            margin-left: auto;
         }
 
         .message-avatar {
@@ -881,13 +883,6 @@ style="flex:1; border:none; outline:none; font-size:16px; font-family:inherit; r
 <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
 <line x1="12" y1="19" x2="12" y2="23"></line>
 <line x1="8" y1="23" x2="16" y2="23"></line>
-</svg>
-</button>
-
-<button id="liveVoiceBtn" title="Live Voice Chat" style="background:none; border:none; cursor:pointer; color:#10a37f; display:flex; padding:4px; margin: 0 4px;">
-<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-<path d="M2 12a10 10 0 0 1 20 0v2a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-2a6 6 0 0 0-12 0v2a2 2 0 0 1-2 2H2v-4z"></path>
-<path d="M12 22a2 2 0 0 0 2-2H10a2 2 0 0 0 2 2z"></path>
 </svg>
 </button>
 
@@ -1578,12 +1573,16 @@ function addMessageToUI(role, content, isNew = false, id = null, isRawHtml = fal
                 i += speed;
                 const currentText = content.substring(0, i);
                 contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(currentText));
-                chatMessages.scrollTop = chatMessages.scrollHeight;
+                if (!userScrolledUp) {
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
                 requestAnimationFrame(typeWriter);
             } else {
                 contentDiv.innerHTML = contentHtml;
                 // Only scroll if it's the typewriter generating new text
-                chatMessages.scrollTop = chatMessages.scrollHeight;
+                if (!userScrolledUp) {
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
             }
         }
         requestAnimationFrame(typeWriter);
@@ -1752,119 +1751,65 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const voiceBtn = document.getElementById("voiceBtn");
     let isDictating = false;
-    let mediaRecorder = null;
-    let audioContext = null;
-    let silenceTimer = null;
-    let audioChunks = [];
-    const SILENCE_THRESHOLD = 2500; // 2.5 seconds
-    const VOLUME_THRESHOLD = 5; // minimal volume threshold
+    let recognition = null;
+    
+    if (window.SpeechRecognition || window.webkitSpeechRecognition) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        
+        recognition.onstart = () => {
+            isDictating = true;
+            if (voiceBtn) voiceBtn.classList.add("recording-active");
+            document.getElementById("messageInput").placeholder = "Listening...";
+        };
+        
+        recognition.onresult = (event) => {
+            let finalTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                }
+            }
+            if (finalTranscript) {
+                const msgInput = document.getElementById("messageInput");
+                msgInput.value = (msgInput.value + " " + finalTranscript).trim();
+                if (typeof updateSendButton === "function") updateSendButton();
+            }
+        };
+        
+        recognition.onerror = (event) => {
+            console.error("Speech recognition error:", event.error);
+            stopDictation();
+        };
+        
+        recognition.onend = () => {
+            if (isDictating) {
+                try { recognition.start(); } catch(e) { stopDictation(); }
+            }
+        };
+    }
 
     if (voiceBtn) {
-        voiceBtn.addEventListener("click", async () => {
+        voiceBtn.addEventListener("click", () => {
             if (isDictating) {
-                // Manually turn off
-                stopRecording();
+                stopDictation();
             } else {
-                // Turn on
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    startRecording(stream);
-                } catch (err) {
-                    alert("Microphone access denied or not supported.");
-                    console.error("Mic error:", err);
+                if (recognition) {
+                    try { recognition.start(); } catch(e) {}
+                } else {
+                    alert("Dictate is not supported in your browser.");
                 }
             }
         });
     }
 
-    function startRecording(stream) {
-        isDictating = true;
-        voiceBtn.classList.add("recording-active");
-        audioChunks = [];
-        
-        // Stop any ongoing TTS playback
-        window.speechSynthesis.cancel();
-
-        mediaRecorder = new MediaRecorder(stream);
-        
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const source = audioContext.createMediaStreamSource(stream);
-        const analyser = audioContext.createAnalyser();
-        analyser.fftSize = 512;
-        source.connect(analyser);
-
-        const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-        function detectSilence() {
-            if (!isDictating) return;
-            analyser.getByteFrequencyData(dataArray);
-            let sum = 0;
-            for(let i=0; i < dataArray.length; i++) sum += dataArray[i];
-            let averageVolume = sum / dataArray.length;
-
-            if (averageVolume < VOLUME_THRESHOLD) {
-                if (!silenceTimer) {
-                    silenceTimer = setTimeout(() => {
-                        if (isDictating) {
-                            console.log("Silence detected. Stopping and submitting...");
-                            stopRecordingAndSubmit();
-                        }
-                    }, SILENCE_THRESHOLD);
-                }
-            } else {
-                if (silenceTimer) {
-                    clearTimeout(silenceTimer);
-                    silenceTimer = null;
-                }
-            }
-            requestAnimationFrame(detectSilence);
-        }
-
-        mediaRecorder.ondataavailable = e => {
-            if (e.data.size > 0) audioChunks.push(e.data);
-        };
-
-        mediaRecorder.start(250); // get chunks frequently
-        detectSilence();
-    }
-
-    function stopRecording() {
-        if (!isDictating) return;
+    function stopDictation() {
         isDictating = false;
-        voiceBtn.classList.remove("recording-active");
-        if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
-        if (mediaRecorder && mediaRecorder.state !== "inactive") {
-            mediaRecorder.stop();
-        }
-        if (audioContext) {
-            audioContext.close();
-        }
-        // If manually stopped, we do NOT auto-submit.
-    }
-
-    function stopRecordingAndSubmit() {
-        if (!isDictating) return;
-        isDictating = false;
-        voiceBtn.classList.remove("recording-active");
-        if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
-        
-        mediaRecorder.onstop = async () => {
-            if (audioContext) audioContext.close();
-            
-            const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
-            
-            // Send the audio blob to the backend as a standard file attachment
-            attachedFile = new File([audioBlob], "voice_memo.webm", { type: mediaRecorder.mimeType });
-            
-            // Automatically submit the message
-            document.getElementById("messageInput").value = "Transcribe and answer this voice note directly.";
-            updateSendButton();
-            await sendMessage();
-        };
-        
-        if (mediaRecorder.state !== "inactive") {
-            mediaRecorder.stop();
-        }
+        if (voiceBtn) voiceBtn.classList.remove("recording-active");
+        document.getElementById("messageInput").placeholder = "Ask anything";
+        if (recognition) recognition.stop();
     }
 
     // Wrap the original addMessageToUI to inject text-to-speech for assistant messages
@@ -1874,10 +1819,8 @@ document.addEventListener("DOMContentLoaded", () => {
         
         // If it's a completely new AI generation response (not loading/history)
         if (isNew && role === "assistant" && content && content.trim()) {
-            const utterance = new SpeechSynthesisUtterance(content);
-            utterance.lang = 'en-US';
-            utterance.rate = 1.05; // slightly faster conversational tone
-            window.speechSynthesis.speak(utterance);
+            // Text-to-speech auto-reading removed as requested by user.
+            // window.speechSynthesis.speak(new SpeechSynthesisUtterance(content));
         }
     };
 
@@ -1993,6 +1936,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let nextPlayTime  = 0;
     let liveActive    = false;
     let aiSpeaking    = false;           // true while AI audio is playing
+    let activeAudioNodes = [];           // track active AudioBufferSourceNodes
     let micVolumeSum  = 0, micSamples = 0;
 
     // ── Status helpers ─────────────────────────────────────────────────────
@@ -2107,6 +2051,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     aiSpeaking = false;
                     // Stop audio queue
                     nextPlayTime = liveAudioCtx.currentTime;
+                    activeAudioNodes.forEach(n => { try { n.stop(); } catch(e){} });
+                    activeAudioNodes = [];
                     liveSocket.send(JSON.stringify({ type: "interrupt" }));
                 }
 
@@ -2145,6 +2091,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const src = liveAudioCtx.createBufferSource();
             src.buffer = buffer;
             src.connect(liveAudioCtx.destination);
+
+            src.onended = () => {
+                activeAudioNodes = activeAudioNodes.filter(n => n !== src);
+            };
+            activeAudioNodes.push(src);
 
             const start = Math.max(liveAudioCtx.currentTime, nextPlayTime);
             src.start(start);

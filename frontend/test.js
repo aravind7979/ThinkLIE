@@ -430,10 +430,11 @@ async function sendMessage() {
         
         // Trigger TTS if not empty
         if (accumulatedText.trim()) {
-            const utterance = new SpeechSynthesisUtterance(accumulatedText);
-            utterance.lang = 'en-US';
-            utterance.rate = 1.05;
-            window.speechSynthesis.speak(utterance);
+            // Text-to-speech auto-reading removed.
+            // const utterance = new SpeechSynthesisUtterance(accumulatedText);
+            // utterance.lang = 'en-US';
+            // utterance.rate = 1.05;
+            // window.speechSynthesis.speak(utterance);
         }
 
     } catch (e) {
@@ -533,12 +534,16 @@ function addMessageToUI(role, content, isNew = false, id = null, isRawHtml = fal
                 i += speed;
                 const currentText = content.substring(0, i);
                 contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(currentText));
-                chatMessages.scrollTop = chatMessages.scrollHeight;
+                if (!userScrolledUp) {
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
                 requestAnimationFrame(typeWriter);
             } else {
                 contentDiv.innerHTML = contentHtml;
                 // Only scroll if it's the typewriter generating new text
-                chatMessages.scrollTop = chatMessages.scrollHeight;
+                if (!userScrolledUp) {
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
             }
         }
         requestAnimationFrame(typeWriter);
@@ -829,10 +834,11 @@ document.addEventListener("DOMContentLoaded", () => {
         
         // If it's a completely new AI generation response (not loading/history)
         if (isNew && role === "assistant" && content && content.trim()) {
-            const utterance = new SpeechSynthesisUtterance(content);
-            utterance.lang = 'en-US';
-            utterance.rate = 1.05; // slightly faster conversational tone
-            window.speechSynthesis.speak(utterance);
+            // Text-to-speech auto-reading removed.
+            // const utterance = new SpeechSynthesisUtterance(content);
+            // utterance.lang = 'en-US';
+            // utterance.rate = 1.05; // slightly faster conversational tone
+            // window.speechSynthesis.speak(utterance);
         }
     };
 
