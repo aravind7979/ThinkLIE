@@ -59,7 +59,7 @@ class QueryAnalyzer:
             }}
             """
             response = client.models.generate_content(
-                model="gemini-2.5-flash-lite",
+                model="gemini-2.5-flash",
                 contents=prompt
             )
             raw_text = response.text.strip().replace("```json", "").replace("```", "")

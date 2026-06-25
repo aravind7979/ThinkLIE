@@ -307,7 +307,7 @@ async def send_message(
             if client and message:
                 title_prompt = f"Generate a short, concise title (3 to 5 words max) for a chat that starts with this message. Respond with JUST the title, no quotes or intro: '{message}'"
                 title_response = client.models.generate_content(
-                    model="gemini-2.5-flash-lite", 
+                    model="gemini-2.5-flash", 
                     contents=title_prompt
                 )
                 chat.title = title_response.text.strip().replace('"', '')
@@ -341,6 +341,13 @@ async def send_message(
                 from ai.orchestrator import orchestrator
                 file_bytes = await file.read() if file else None
                 file_type = file.content_type if file else None
+                user_profile_data = {}
+                if current_user.profile:
+                    user_profile_data = {
+                        "skills": current_user.profile.skills,
+                        "goals": current_user.profile.goals,
+                        "preferences": current_user.profile.preferences
+                    }
                 
                 async for text_chunk in orchestrator.generate_response_stream(
                     query=message, 
@@ -349,7 +356,8 @@ async def send_message(
                     user_id=current_user.id,
                     session_id=chat_id,
                     file_bytes=file_bytes,
-                    file_type=file_type
+                    file_type=file_type,
+                    user_profile=user_profile_data
                 ):
                     full_ai_response += text_chunk
                     yield f"data: {json.dumps({'type': 'chunk', 'text': text_chunk})}\n\n"

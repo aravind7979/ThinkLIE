@@ -1922,7 +1922,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // LIVE VOICE CHAT (FULL DUPLEX)
     // =================================================
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host || 'ec2-13-49-178-85.eu-north-1.compute.amazonaws.com:8000';
+    const host = window.location.host;
     const LIVE_VOICE_WS = `${protocol}//${host}/api/live-voice`;
 
     const liveVoiceBtn  = document.getElementById("liveVoiceBtn");

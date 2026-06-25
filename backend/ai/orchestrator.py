@@ -23,7 +23,8 @@ class Orchestrator:
         user_id: str = "anonymous",
         session_id: str = None,
         file_bytes: Optional[bytes] = None,
-        file_type: Optional[str] = None
+        file_type: Optional[str] = None,
+        user_profile: Optional[Dict[str, Any]] = None
     ) -> str:
         """
         The main pipeline:
@@ -68,7 +69,7 @@ class Orchestrator:
             ranked_data=ranked_docs,
             session_history=session_memory,
             long_term_memory=lt_memory,
-            user_profile={"skills": "General Developer", "goals": "Learn system design"},
+            user_profile=user_profile or {},
             file_context=file_context
         )
 
@@ -77,7 +78,7 @@ class Orchestrator:
         
         # 8. LLM Generation
         response = client.models.generate_content(
-            model="gemini-2.5-flash-lite", 
+            model="gemini-2.5-flash", 
             contents=final_prompt
         )
         raw_text = response.text
@@ -105,7 +106,8 @@ class Orchestrator:
         user_id: str = "anonymous",
         session_id: str = None,
         file_bytes: Optional[bytes] = None,
-        file_type: Optional[str] = None
+        file_type: Optional[str] = None,
+        user_profile: Optional[Dict[str, Any]] = None
     ):
         """
         Streaming pipeline yielding chunks.
@@ -138,7 +140,7 @@ class Orchestrator:
             ranked_data=ranked_docs,
             session_history=session_memory,
             long_term_memory=lt_memory,
-            user_profile={"skills": "General Developer", "goals": "Learn system design"},
+            user_profile=user_profile or {},
             file_context=file_context
         )
 
@@ -147,7 +149,7 @@ class Orchestrator:
         
         # 7. LLM Streaming
         response_stream = client.models.generate_content_stream(
-            model="gemini-2.5-flash-lite", 
+            model="gemini-2.5-flash", 
             contents=final_prompt
         )
         
